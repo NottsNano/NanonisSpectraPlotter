@@ -1,4 +1,3 @@
-import nanonispy as napy
 import numpy as np
 import pandas as pd
 
@@ -11,21 +10,23 @@ def ensure_list(var):
     return [var] if not isinstance(var, list) else var
 
 
-def extract_all_values(datastore, data_type, name, remove_none=False):
-    out = []
-    for data in datastore:
-        out = [*out, *ensure_list(data[data_type][name])]
-
-    if remove_none:
-        out = np.array(out)
-        out = out[out != None]
-        out = list(out)
+def extract_all_values(data, data_type, name):
+    out = np.empty(len(data), dtype="object")
+    for i, entry in enumerate(data):
+        out[i] = entry[data_type][name]
 
     return out
 
 
-def list2dropdownopts(data):
-    return [{"label": val, "value": val} for val in data]
+def makedropdownopts(data, signal_type, channel):
+    opts = []
+    for entry in data:
+        opts += [entry[signal_type][channel]]
+
+    opts = np.array(opts)
+    opts = opts[opts!=None]
+
+    return [{"label": val, "value": val} for val in opts]
 
 
 def mpl_to_plotly(cmap, pl_entries=30, rdigits=6):
@@ -42,7 +43,6 @@ def build_spectra_hover(params_pandas: pd.DataFrame):
                          "%{customdata[" + f"{i}" + "]:,.3g}<br>"
     hovertemplate += '<extra></extra>'
     return hovertemplate
-
 
 
 def combine_click_selects(events: list):

@@ -2,19 +2,55 @@ import numpy as np
 from nOmicron.utils.plotting import nanomap
 from plotly import graph_objects as go, express as px
 
+import utils
 from data import dot3ds_params2pd
 from utils import build_spectra_hover, mpl_to_plotly
 
 
-def make_image_plot():
+def make_empty_image_plot():
     image_fig = go.Figure()
     image_fig.update_layout(title="Spectra Position",
-                            width=600,
-                            height=600,
-                            autosize=True,
                             xaxis_title="x (m)",
                             yaxis_title="y (m)",
                             margin={'t': 100, 'b': 20, 'r': 20, 'l': 20})
+
+    return image_fig
+
+
+def make_image_spec_position_plot(data, img_channel):
+    # with open('tmp/data.json', 'w') as f:
+    #     json.dump(data, f)
+
+    # Extract needed data
+    img_data = utils.extract_all_values(data, "signals", "img")
+    pos = utils.extract_all_values(data, "signal_metadata", "pos_xy")
+    names = utils.extract_all_values(data, "experiment_metadata", "experiment_name")
+    res = utils.extract_all_values(data, "signal_metadata", "image_points_res")
+
+    # Look through all uploaded files
+    image_fig = make_empty_image_plot()
+    for i in range(len(data)):
+        # Add images
+        if data[i]["signal_metadata"]["img_channels"] is not None:
+            if img_channel in data[i]["signal_metadata"]["img_channels"]:
+                imshow = px.imshow(np.array(img_data[i][img_channel]).reshape(res[i][::-1]),
+                                   x=np.linspace(np.array(pos[i])[..., 0].min(),
+                                                 np.array(pos[i])[..., 0].max(),
+                                                 res[i][0]),
+                                   y=np.linspace(np.array(pos[i])[..., 1].min(),
+                                                 np.array(pos[i])[..., 1].max(),
+                                                 res[i][1]),
+                                   color_continuous_scale=mpl_to_plotly(nanomap),
+                                   origin="lower", aspect="equal")
+                image_fig.add_trace(imshow.data[0])
+                image_fig.update_layout(imshow.layout, hovermode="closest")
+
+        # Add spectra
+        image_fig.add_trace(go.Scatter(x=np.array(pos[i])[..., 0].ravel(), y=np.array(pos[i])[..., 1].ravel(),
+                                       name=names[i],
+                                       mode="markers",
+                                       hoverinfo='text',
+                                       customdata=np.repeat(i, np.array(pos[i]).size // 2)))
 
     return image_fig
 

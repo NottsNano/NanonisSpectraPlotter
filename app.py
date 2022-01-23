@@ -1,10 +1,8 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
-import glob
 
 import dash
 import dash_bootstrap_components as dbc
-import numpy as np
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from dash_bootstrap_templates import load_figure_template
@@ -12,8 +10,6 @@ from dash_bootstrap_templates import load_figure_template
 import data
 import plotting
 import utils
-from dataloader.filetypes import nanonis
-from utils import extract_all_values
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.0.4/dbc.min.css"
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc_css])
@@ -21,7 +17,7 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc_css])
 app.title = "Spectra Explorer"
 load_figure_template(["darkly"])
 
-image_fig = plotting.make_image_plot()
+image_fig = plotting.make_empty_image_plot()
 spectra_fig = plotting.make_spectra_fig()
 
 
@@ -33,7 +29,7 @@ spectra_fig = plotting.make_spectra_fig()
               State('upload-data-box', 'filename'),
               prevent_initial_call=True)
 def load_files(list_of_contents, list_of_names):
-    # If reset button is clicked, recreate resource dict of images and spectra
+    # If full reset button is clicked, delete data store
     resource_data_store = data.make_empty_data_store()
 
     # Load in the data from each file into a unified, jsonable dictionary to be stored
@@ -41,14 +37,19 @@ def load_files(list_of_contents, list_of_names):
         resource_data_store = data.add_file_to_datastore(contents, fname, resource_data_store)
 
     # Populate the dropdown menu options
-    image_channels = utils.list2dropdownopts(
-        np.unique(extract_all_values(resource_data_store, "signal_metadata", "img_channels", remove_none=True)))
-    spectra_x_channels = utils.list2dropdownopts(
-        np.unique(extract_all_values(resource_data_store, "signal_metadata", "spectra_x_channels", remove_none=True)))
-    spectra_y_channels = utils.list2dropdownopts(
-        np.unique(extract_all_values(resource_data_store, "signal_metadata", "spectra_y_channels", remove_none=True)))
+    image_channels = utils.makedropdownopts(resource_data_store, "signal_metadata", "img_channels")
+    spectra_x_channels = utils.makedropdownopts(resource_data_store, "spectra_x_channels", "img_channels")
+    spectra_y_channels = utils.makedropdownopts(resource_data_store, "spectra_x_channels", "img_channels")
 
     return resource_data_store, image_channels, spectra_x_channels, spectra_y_channels
+
+
+@app.callback(Output('ref-image', 'figure'),
+              Input('uploaded-data', 'data'),
+              Input('image-channel-dropdown', 'value'),
+              prevent_initial_call=True)
+def update_image_figure(uploaded_data, image_channel):
+    return plotting.make_image_spec_position_plot(uploaded_data, image_channel)
 
 
 #
@@ -115,24 +116,6 @@ def load_files(list_of_contents, list_of_names):
 #     return spectra_fig, clearbutton_presses
 
 
-def test_data_loading():
-    data_store = data.make_empty_data_store()
-    paths = glob.glob(r"C:\Users\omicron_vt\Documents\test\*")
-    for tmp_path in paths:
-        if utils.get_ext(tmp_path) == "3ds":  # Use some code to generate function automatically??
-            new_entry = nanonis.convert_3ds(tmp_path)
-        elif utils.get_ext(tmp_path) == "dat":
-            new_entry = nanonis.convert_dat(tmp_path)
-        elif utils.get_ext(tmp_path) == "sxm":
-            new_entry = nanonis.convert_sxm(tmp_path)
-        else:
-            raise ValueError("File Format Not Supported!")
-
-        data_store = data_store + [new_entry]
-
-    return data_store
-
-
 root_layout = html.Div([
     html.Hr(),
     html.Div(dcc.Upload(
@@ -142,7 +125,7 @@ root_layout = html.Div([
             'Drag and Drop or ',
             html.A('Select Files')]),
         style={
-            'width': '100%',
+            'width': '1800px',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
@@ -152,20 +135,29 @@ root_layout = html.Div([
         })),
     html.Hr(),
     html.Div([
-        # dcc.Markdown()
+        dcc.Markdown("**Image Channel: **",
+                     style={'width': '600px',
+                            "text-align": "center",
+                            'display': 'inline-block'}),
+        dcc.Markdown("**Spectra Channels: **",
+                     style={'width': '1200px',
+                            "text-align": "center",
+                            'display': 'inline-block'}),
+
         dcc.Dropdown(id="image-channel-dropdown",
                      placeholder="Image Channel",
-                     style={'width': '30%',
+                     style={'width': '600px',
                             'display': 'inline-block'}),
+
         dcc.Dropdown(id="spectra-x-channel-dropdown",
                      placeholder="Spectra Channel (x)",
                      multi=False,
-                     style={'width': '30%',
+                     style={'width': '300px',
                             'display': 'inline-block'}),
         dcc.Dropdown(id="spectra-y-channel-dropdown",
                      placeholder="Spectra Channel (y)",
                      multi=True,
-                     style={'width': '30%',
+                     style={'width': '300px',
                             'display': 'inline-block'}),
         dbc.Button("Clear Spectra", id="btn-clear-spec",
                    size="sm",
@@ -179,17 +171,21 @@ root_layout = html.Div([
         dcc.Graph(
             id='ref-image',
             figure=image_fig,
-            style={'display': 'inline-block'}),
+            style={'width': "600px",
+                   'height': "600px",
+                   'display': 'inline-block'}),
         dcc.Graph(
             id='ref-spectra',
             figure=spectra_fig,
-            style={'display': 'inline-block'})
+            style={'width': "1200px",
+                   'height': "600px",
+                   'display': 'inline-block'})
     ])
 ])
 
 app.layout = dbc.Container(
     [root_layout,
-     dcc.Store(id='uploaded-data'),
+     dcc.Store(id='uploaded-data'),  # storage_type='session'
      dcc.Store(id='btn-clear-old-data')],
     fluid=True,
     className="dbc"

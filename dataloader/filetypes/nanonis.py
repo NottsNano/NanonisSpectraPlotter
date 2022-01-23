@@ -1,7 +1,8 @@
-from dataloader.convert import convert_to_common
 from flatten_dict import flatten
 from nanonispy.read import Grid, Spec, Scan
+
 import utils
+from dataloader.convert import convert_to_common
 
 IMAGE_FILE_FORMATS = ["sxm"]
 SPECTRA_FILE_FORMATS = ["dat", "3ds"]
@@ -12,19 +13,17 @@ def convert_3ds(fname):
     data = Grid(fname)
 
     mapping = {"data_type": "spectra",
-               "experiment_name": data.fname,
+               "experiment_name": data.basename,
                "filetype": "3ds",
                "time_start": data.header["start_time"],
                "time_end": data.header["end_time"],
                "comment": data.header["comment"],
 
-               "pos_x": data.signals["params"][
-                   ..., len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index("X (m)")],
-               "pos_y": data.signals["params"][
-                   ..., len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index("Y (m)")],
-               "size_x": data.header["size_xy"][0],
-               "size_y": data.header["size_xy"][1],
-               "image_points_res": data.header["dim_px"],
+               "pos_xy": (data.signals["params"][...,
+                          (len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index("X (m)"))
+                          :(len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index("Y (m)")+1)].tolist()),
+               "size_xy": list(data.header["size_xy"]),
+               "image_points_res": list(data.header["dim_px"]),
                "spectra_res": data.header["num_sweep_signal"],
                "spectra_x_channels": utils.ensure_list(data.header["sweep_signal"]),
                "spectra_y_channels": utils.ensure_list(data.header["channels"]),
@@ -51,8 +50,7 @@ def convert_dat(fname):
                "time_start": data.header["Start time"],
                "time_end": data.header["Saved Date"],
 
-               "pos_x": data.header["X (m)"],
-               "pos_y": data.header["Y (m)"],
+               "pos_xy": [data.header["X (m)"], data.header["Y (m)"]],
                "spectra_res": len(list(data.signals.values())[0]),
                "spectra_x_channels": list(data.signals.keys()),
                "spectra_y_channels": list(data.signals.keys()),
@@ -73,6 +71,7 @@ def convert_sxm(fname):
             return k2
         else:
             return f"{k1} ({k2})"
+
     flattened_signal_dict = flatten(data.signals, reducer=reducer)
 
     mapping = {"data_type": "image",
@@ -81,10 +80,8 @@ def convert_sxm(fname):
                "time_start": f"{data.header['rec_date']} {data.header['rec_time']}",
                "comment": data.header["comment"],
 
-               "pos_x": data.header["scan_offset"][0],
-               "pos_y": data.header["scan_offset"][1],
-               "size_x": data.header["scan_range"][0],
-               "size_y": data.header["scan_range"][1],
+               "pos_xy": list(data.header["scan_offset"]),
+               "size_xy": list(data.header["scan_range"]),
                "image_points_res": list(data.header["scan_pixels"]),
                "img_channels": list(flattened_signal_dict.keys()),
                "img": {key: val.tolist() for key, val in flattened_signal_dict.items()}
