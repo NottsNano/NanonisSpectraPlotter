@@ -1,17 +1,36 @@
+import nanonispy as napy
 import numpy as np
 import pandas as pd
-import nanonispy as napy
 
 
 def get_ext(fpath):
     return fpath.split(".")[-1]
 
-def assert_list(var):
-    return [var] if isinstance(var, str) else var
+
+def ensure_list(var):
+    return [var] if not isinstance(var, list) else var
+
+
+def extract_all_values(datastore, data_type, name, remove_none=False):
+    out = []
+    for data in datastore:
+        out = [*out, *ensure_list(data[data_type][name])]
+
+    if remove_none:
+        out = np.array(out)
+        out = out[out != None]
+        out = list(out)
+
+    return out
+
+
+def list2dropdownopts(data):
+    return [{"label": val, "value": val} for val in data]
+
 
 def mpl_to_plotly(cmap, pl_entries=30, rdigits=6):
     scale = np.linspace(0, 1, pl_entries)
-    colors = (cmap(scale)[:, :3]*255).astype(np.uint8)
+    colors = (cmap(scale)[:, :3] * 255).astype(np.uint8)
     pl_colorscale = [[round(s, rdigits), f'rgb{tuple(color)}'] for s, color in zip(scale, colors)]
     return pl_colorscale
 
@@ -24,22 +43,6 @@ def build_spectra_hover(params_pandas: pd.DataFrame):
     hovertemplate += '<extra></extra>'
     return hovertemplate
 
-
-def build_dropdown_options(grid: napy.read.Grid, sxm: napy.read.Scan):
-    from data import sxm2dict
-
-    if sxm is None:
-        sxm_channels = []
-    else:
-        sxm_channels = list(sxm2dict(sxm).keys())
-
-    grid_signal_channels = []
-    for signal_channel, value in grid.signals.items():
-        if signal_channel not in ["params", "sweep_signal"]:
-            grid_signal_channels += [signal_channel]
-    all_channels = grid_signal_channels + grid.header["fixed_parameters"] + grid.header["experimental_parameters"] + sxm_channels
-
-    return [{"label": val, "value": val} for val in all_channels]
 
 
 def combine_click_selects(events: list):

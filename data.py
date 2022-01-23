@@ -7,7 +7,7 @@ import pandas as pd
 from PIL import Image
 from nOmicron.utils.plotting import nanomap
 
-from dataloader.converters import nanonis, omicron
+from dataloader.filetypes import nanonis, omicron
 from utils import get_ext
 
 
@@ -43,7 +43,7 @@ def add_file_to_datastore(data, filename: str, old_datastore):
 
     del_tmpfile(tmp_path)
 
-    return old_datastore.append(new_entry)
+    return old_datastore + [new_entry]
 
 
 def load_img(filename: str):

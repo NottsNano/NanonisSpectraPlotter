@@ -1,7 +1,7 @@
+from dataloader.convert import convert_to_common
 from flatten_dict import flatten
 from nanonispy.read import Grid, Spec, Scan
-
-from dataloader.common import convert_to_common
+import utils
 
 IMAGE_FILE_FORMATS = ["sxm"]
 SPECTRA_FILE_FORMATS = ["dat", "3ds"]
@@ -26,8 +26,8 @@ def convert_3ds(fname):
                "size_y": data.header["size_xy"][1],
                "image_points_res": data.header["dim_px"],
                "spectra_res": data.header["num_sweep_signal"],
-               "spectra_x_channels": data.header["sweep_signal"],
-               "spectra_y_channels": data.header["channels"],
+               "spectra_x_channels": utils.ensure_list(data.header["sweep_signal"]),
+               "spectra_y_channels": utils.ensure_list(data.header["channels"]),
                "img_channels": ["topo"] + data.header["fixed_parameters"] + data.header["experimental_parameters"],
                "spectra_x": {data.header["sweep_signal"]: data.signals["sweep_signal"].tolist()},
                "spectra_y": {channel: data.signals[channel].ravel().tolist() for channel in data.header["channels"]},
