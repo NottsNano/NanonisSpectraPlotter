@@ -25,12 +25,14 @@ spectra_fig = plotting.make_spectra_fig()
               Output('image-channel-dropdown', 'options'),
               Output('spectra-x-channel-dropdown', 'options'),
               Output('spectra-y-channel-dropdown', 'options'),
+              Input('uploaded-data', 'data'),
               Input('upload-data-box', 'contents'),
               State('upload-data-box', 'filename'),
               prevent_initial_call=True)
-def load_files(list_of_contents, list_of_names):
+def load_files(resource_data_store, list_of_contents, list_of_names):
     # If full reset button is clicked, delete data store
-    resource_data_store = data.make_empty_data_store()
+    if resource_data_store is None: # or button is pressed
+        resource_data_store = data.make_empty_data_store()
 
     # Load in the data from each file into a unified, jsonable dictionary to be stored
     for contents, fname in zip(list_of_contents, list_of_names):
