@@ -24,22 +24,26 @@ def del_tmpfile(orig_name: str):
     os.remove(orig_name)
 
 
-def loadfile(data, filename: str, data_dict):
+def make_empty_data_store():
+    return []
+
+
+def add_file_to_datastore(data, filename: str, old_datastore):
     tmp_path = f"tmp/{filename}"
     make_tmpfile(data, tmp_path)
 
     if get_ext(tmp_path) == "3ds":  # Use some code to generate function automatically??
-        data_dict = nanonis.add_3ds(tmp_path, data_dict)
+        new_entry = nanonis.convert_3ds(tmp_path)
     elif get_ext(tmp_path) == "dat":
-        data_dict = nanonis.add_dat(tmp_path, data_dict)
+        new_entry = nanonis.convert_dat(tmp_path)
     elif get_ext(tmp_path) == "sxm":
-        data_dict = nanonis.add_sxm(tmp_path, data_dict)
+        new_entry = nanonis.convert_sxm(tmp_path)
     else:
         raise ValueError("File Format Not Supported!")
 
     del_tmpfile(tmp_path)
 
-    return data_dict
+    return old_datastore.append(new_entry)
 
 
 def load_img(filename: str):

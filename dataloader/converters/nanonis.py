@@ -1,18 +1,19 @@
 from flatten_dict import flatten
 from nanonispy.read import Grid, Spec, Scan
 
-from dataloader.common import add_to_data_dict
+from dataloader.common import convert_to_common
 
 IMAGE_FILE_FORMATS = ["sxm"]
 SPECTRA_FILE_FORMATS = ["dat", "3ds"]
 ALL_FORMATS = [IMAGE_FILE_FORMATS + SPECTRA_FILE_FORMATS]
 
 
-def add_3ds(fname, resource_data_dict):
+def convert_3ds(fname):
     data = Grid(fname)
 
     mapping = {"data_type": "spectra",
                "experiment_name": data.fname,
+               "filetype": "3ds",
                "time_start": data.header["start_time"],
                "time_end": data.header["end_time"],
                "comment": data.header["comment"],
@@ -36,21 +37,22 @@ def add_3ds(fname, resource_data_dict):
                        }
                }
 
-    resource_data_dict = add_to_data_dict(resource_data_dict, mapping)
+    resource_data = convert_to_common(mapping)
 
-    return resource_data_dict
+    return resource_data
 
 
-def add_dat(fname, resource_data_dict):
+def convert_dat(fname):
     data = Spec(fname)
 
     mapping = {"data_type": "spectra",
                "experiment_name": data.fname,
+               "filetype": "dat",
                "time_start": data.header["Start time"],
                "time_end": data.header["Saved Date"],
 
-               "pos_x": [data.header["X (m)"]],
-               "pos_y": [data.header["Y (m)"]],
+               "pos_x": data.header["X (m)"],
+               "pos_y": data.header["Y (m)"],
                "spectra_res": len(list(data.signals.values())[0]),
                "spectra_x_channels": list(data.signals.keys()),
                "spectra_y_channels": list(data.signals.keys()),
@@ -58,12 +60,12 @@ def add_dat(fname, resource_data_dict):
                "spectra_y": {key: val.tolist() for key, val in data.signals.items()}
                }
 
-    resource_data_dict = add_to_data_dict(resource_data_dict, mapping)
+    resource_data = convert_to_common(mapping)
 
-    return resource_data_dict
+    return resource_data
 
 
-def add_sxm(fname, resource_data_dict):
+def convert_sxm(fname):
     data = Scan(fname)
 
     def reducer(k1, k2):
@@ -75,6 +77,7 @@ def add_sxm(fname, resource_data_dict):
 
     mapping = {"data_type": "image",
                "experiment_name": data.fname,
+               "filetype": "sxm",
                "time_start": f"{data.header['rec_date']} {data.header['rec_time']}",
                "comment": data.header["comment"],
 
@@ -87,6 +90,6 @@ def add_sxm(fname, resource_data_dict):
                "img": {key: val.tolist() for key, val in flattened_signal_dict.items()}
                }
 
-    resource_data_dict = add_to_data_dict(resource_data_dict, mapping)
+    resource_data = convert_to_common(mapping)
 
-    return resource_data_dict
+    return resource_data

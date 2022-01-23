@@ -1,9 +1,7 @@
 # Run this app with `python app.py` and
 # visit http://127.0.0.1:8050/ in your web browser.
-import base64
-import io
+import glob
 import json
-from io import StringIO
 
 import dash
 import dash_bootstrap_components as dbc
@@ -11,13 +9,12 @@ import numpy as np
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from dash_bootstrap_templates import load_figure_template
-from nanonispy.read import Grid
 
 import data
 import plotting
 import utils
-from data import load_img, load_grid, dot3ds_2dict, sxm2dict, make_tmpfile
-from dataloader.common import make_empty_data_dict
+from data import load_img, load_grid, dot3ds_2dict, sxm2dict
+from dataloader.converters import nanonis
 from utils import build_dropdown_options, combine_click_selects
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.0.4/dbc.min.css"
@@ -58,7 +55,8 @@ def set_core_figs(spectra_path, sxm_path, image_channel):
     elif image_channel in dot3ds_data_dict.keys():
         res = dot3ds_data.header["dim_px"][::-1]
         resizing = res + [-1]
-        background_img = np.array(dot3ds_data_dict[image_channel]).reshape(resizing).mean(axis=-1)  # for now slice it, replace with slider in future
+        background_img = np.array(dot3ds_data_dict[image_channel]).reshape(resizing).mean(
+            axis=-1)  # for now slice it, replace with slider in future
     else:
         background_img = sxm_data_dict[image_channel]
 
@@ -92,57 +90,58 @@ def spectraplotter(clickdata, selectdata, dot3dsdata_dict, selected_y_channels, 
     return spectra_fig, clearbutton_presses
 
 
-
-
 @app.callback(Output('output-data-upload', 'data'),
               Input('upload-data', 'contents'),
               State('upload-data', 'filename'),
               prevent_initial_call=True)
-def load_file(list_of_contents, list_of_names):
+def load_files(list_of_contents, list_of_names):
     # If reset button is clicked, recreate resource dict of images and spectra
-    resource_data_dict = make_empty_data_dict()
+    resource_data_store = data.make_empty_data_store()
 
     # Load in the data from each file into a unified, jsonable dictionary to be stored
     for contents, fname in zip(list_of_contents, list_of_names):
-        resource_data_dict = data.loadfile(contents, fname,  resource_data_dict)
+        resource_data_store = data.add_file_to_datastore(contents, fname, resource_data_store)
 
-    return resource_data_dict
-
-
+    return resource_data_store
 
 
+def test_data_loading():
+    data_store = data.make_empty_data_store()
+    paths = glob.glob(r"C:\Users\omicron_vt\Documents\test\*")
+    for tmp_path in paths:
+        if utils.get_ext(tmp_path) == "3ds":  # Use some code to generate function automatically??
+            new_entry = nanonis.convert_3ds(tmp_path)
+        elif utils.get_ext(tmp_path) == "dat":
+            new_entry = nanonis.convert_dat(tmp_path)
+        elif utils.get_ext(tmp_path) == "sxm":
+            new_entry = nanonis.convert_sxm(tmp_path)
+        else:
+            raise ValueError("File Format Not Supported!")
 
+        data_store.append(new_entry)
+
+    return data_store
 
 
 
 root_layout = html.Div([
     html.Hr(),
-    html.Div([
-        dcc.Markdown("** Spectra: **",
-                     style={'width': '150px',
-                            'margin': {'l': '10px'},
-                            'display': 'inline-block'}),
-        dcc.Input(
-            id="spectra-upload",
-            type="text",
-            spellCheck=False,
-            persistence=True,
-            debounce=True,
-            style={'width': '1640px'},
-            placeholder=".3ds or .dat")]),
-    html.Div([
-        dcc.Markdown("** Image (opt.): **",
-                     style={'width': '150px',
-                            'margin': {'l': '10px'},
-                            'display': 'inline-block'}),
-        dcc.Input(
-            id="sxm-upload",
-            type="text",
-            spellCheck=False,
-            persistence=True,
-            debounce=True,
-            style={'width': '1640px'},
-            placeholder=".sxm")]),
+    html.Div(dcc.Upload(
+        id='upload-data',
+        multiple=True,
+        children=html.Div([
+            'Drag and Drop or ',
+            html.A('Select Files')]),
+        style={
+            'width': '100%',
+            'height': '60px',
+            'lineHeight': '60px',
+            'borderWidth': '1px',
+            'borderStyle': 'dashed',
+            'borderRadius': '5px',
+            'textAlign': 'center',
+            'margin': '10px'
+        })),
     html.Hr(),
     html.Div([
         dcc.Dropdown(id="image-dropdown",
@@ -178,30 +177,10 @@ app.layout = dbc.Container(
     [root_layout,
      dcc.Store(id='spectra-data'),
      dcc.Store(id='btn-clear-old-data'),
-dcc.Store(id='output-data-upload'),
-dcc.Upload(
-        id='upload-data',
-        children=html.Div([
-            'Drag and Drop or ',
-            html.A('Select Files')
-        ]),
-        style={
-            'width': '100%',
-            'height': '60px',
-            'lineHeight': '60px',
-            'borderWidth': '1px',
-            'borderStyle': 'dashed',
-            'borderRadius': '5px',
-            'textAlign': 'center',
-            'margin': '10px'
-        },
-        # Allow multiple files to be uploaded
-        multiple=True
-    )],
+     dcc.Store(id='output-data-upload')],
     fluid=True,
     className="dbc"
 )
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
