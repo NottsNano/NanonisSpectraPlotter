@@ -1,3 +1,5 @@
+from itertools import chain
+
 import numpy as np
 import pandas as pd
 
@@ -21,10 +23,9 @@ def extract_all_values(data, data_type, name):
 def makedropdownopts(data, signal_type, channel):
     opts = []
     for entry in data:
-        opts += [entry[signal_type][channel]]
-
-    opts = np.array(opts)
-    opts = opts[opts!=None]
+        potential_entry = entry[signal_type][channel]
+        if potential_entry is not None:
+            opts += potential_entry
 
     return [{"label": val, "value": val} for val in opts]
 

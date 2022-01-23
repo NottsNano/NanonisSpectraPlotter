@@ -45,7 +45,7 @@ def convert_dat(fname):
     data = Spec(fname)
 
     mapping = {"data_type": "spectra",
-               "experiment_name": data.fname,
+               "experiment_name": data.basename,
                "filetype": "dat",
                "time_start": data.header["Start time"],
                "time_end": data.header["Saved Date"],
@@ -75,7 +75,7 @@ def convert_sxm(fname):
     flattened_signal_dict = flatten(data.signals, reducer=reducer)
 
     mapping = {"data_type": "image",
-               "experiment_name": data.fname,
+               "experiment_name": data.basename,
                "filetype": "sxm",
                "time_start": f"{data.header['rec_date']} {data.header['rec_time']}",
                "comment": data.header["comment"],

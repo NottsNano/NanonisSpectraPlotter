@@ -1,7 +1,7 @@
 import numpy as np
 from nOmicron.utils.plotting import nanomap
 from plotly import graph_objects as go, express as px
-
+import json
 import utils
 from data import dot3ds_params2pd
 from utils import build_spectra_hover, mpl_to_plotly
@@ -18,8 +18,8 @@ def make_empty_image_plot():
 
 
 def make_image_spec_position_plot(data, img_channel):
-    # with open('tmp/data.json', 'w') as f:
-    #     json.dump(data, f)
+    with open('tmp/data.json', 'w') as f:
+        json.dump(data, f)
 
     # Extract needed data
     img_data = utils.extract_all_values(data, "signals", "img")
