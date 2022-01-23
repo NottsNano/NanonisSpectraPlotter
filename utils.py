@@ -27,7 +27,7 @@ def makedropdownopts(data, signal_type, channel):
         if potential_entry is not None:
             opts += potential_entry
 
-    return [{"label": val, "value": val} for val in opts]
+    return [{"label": val, "value": val} for val in list(set(opts))]
 
 
 def mpl_to_plotly(cmap, pl_entries=30, rdigits=6):
