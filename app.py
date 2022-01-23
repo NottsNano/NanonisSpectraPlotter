@@ -106,8 +106,6 @@ def load_file(list_of_contents, list_of_names):
     for contents, fname in zip(list_of_contents, list_of_names):
         resource_data_dict = data.loadfile(contents, fname,  resource_data_dict)
 
-    print(resource_data_dict)
-
     return resource_data_dict
 
 
