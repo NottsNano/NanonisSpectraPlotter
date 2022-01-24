@@ -56,7 +56,7 @@ def update_image_spec_pos_figure(uploaded_data, image_channel):
 
 
 @app.callback(Output('fig-spectra', 'figure'),
-              Output('data-clear-spec', 'data'),
+              Output('data-clear-spec-btn', 'data'),
               State('uploaded-data', 'data'),
               Input('spectra-x-channel-dropdown', 'value'),
               Input('spectra-y-channel-dropdown', 'value'),
@@ -64,10 +64,11 @@ def update_image_spec_pos_figure(uploaded_data, image_channel):
               Input('fig-image', 'selectedData'),
               Input('fig-spectra', 'figure'),
               Input('btn-clear-spec', 'n_clicks'),
-              State('data-clear-spec', 'data'),
+              State('data-clear-spec-btn', 'data'),
+              Input('background-data', 'data'),
               prevent_initial_call=True)
 def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channels, select_spectra, multi_select_spectra,
-                       old_fig, reset_presses, reset_presses_old):
+                       old_fig, reset_presses, reset_presses_old, background_spec_data):
     # Reset if clear spectra button pressed
     if utils.is_button_pressed(reset_presses, reset_presses_old):
         return plotting.make_empty_spectra_fig(), reset_presses
@@ -85,15 +86,34 @@ def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channels, sel
     # TODO Add tabs for integratal/derivative/double derivative windows
     # Draw the main figure
     spec_figure = plotting.make_spectra_fig(uploaded_data, spectra_x_channel, spectra_y_channels,
-                                            all_selections, spec_figure)
+                                            all_selections, background_spec_data, spec_figure)
 
     return spec_figure, reset_presses
 
 
-# TODO: For background removal, have the button take the mean trace from the spectra figure, store it, and
-# modify the spectra plotting function to take this in as an additional argument, which we can then subtract. Easy!
-def set_spectra_as_background():
-    pass
+@app.callback(Output('background-data', 'data'),
+              Output('data-background-spec-btn', 'data'),
+              State('fig-spectra', 'figure'),
+              State('spectra-y-channel-dropdown', 'value'),
+              Input('btn-background-spec', 'n_clicks'),
+              State('data-background-spec-btn', 'data'),
+              prevent_initial_call=True)
+def set_spectra_as_background(spec_figure, y_channels, reset_presses, reset_presses_old):
+    if spec_figure is None:
+        raise dash.exceptions.PreventUpdate
+
+    if utils.is_button_pressed(reset_presses, reset_presses_old):
+        out = {}
+        spec_figure = go.Figure(spec_figure)
+        out["x"] = spec_figure.data[0]["x"]
+
+        for y_channel in y_channels:
+            for trace in spec_figure.data:
+                if trace.name == f"Mean ({y_channel})":
+                    out[y_channel] = trace["y"]
+        return out, reset_presses
+    else:
+        return None, reset_presses
 
 
 fig_layout = html.Div([
@@ -145,7 +165,7 @@ fig_layout = html.Div([
                      multi=True,
                      style={'width': '300px',
                             'display': 'inline-block'}),
-        dbc.Button("Set as Background", id="btn-set-background",
+        dbc.Button("Set as Background", id="btn-background-spec",
                    size="sm",
                    color="secondary",
                    style={'width': "150px",
@@ -189,12 +209,13 @@ fig_layout = html.Div([
 ])
 
 datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='session'
-                             dcc.Store(id='data-set-background'),
-                             dcc.Store(id='data-clear-spec'),
-                             dcc.Store(id='data-clear-all')])
+                             dcc.Store(id='background-data'),
+                             dcc.Store(id='data-background-spec-btn'),
+                             dcc.Store(id='data-clear-spec-btn'),
+                             dcc.Store(id='data-clear-all-btn')])
 
 attribution_layout = html.Div(children=[
-    html.A('Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022). ',
+    html.A('💝 Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022). ',
            id="author-attribution",
            style={"maginTop": 50,
                   "color": "#AAAAAA"}

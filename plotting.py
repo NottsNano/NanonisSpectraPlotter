@@ -70,7 +70,11 @@ def make_empty_spectra_fig():
     return spectra_fig
 
 
-def make_spectra_fig(data, x_channel, y_channels, selectiondata, spectra_fig):
+def make_spectra_fig(data, x_channel, y_channels, selectiondata, background, spectra_fig):
+    if background is not None:
+        spec_figure = make_empty_spectra_fig()
+        spec_figure.update_layout(title="Spectra (Background Removed)")
+
     for selected_point in selectiondata:  # Loop through all selected points and all channels
         for y_channel in y_channels:
             data_file_idx = selected_point["customdata"]
@@ -80,6 +84,10 @@ def make_spectra_fig(data, x_channel, y_channels, selectiondata, spectra_fig):
                     y_channel in data[data_file_idx]["signals"]["spectra_y"].keys():
                 xdata = np.array(data[data_file_idx]["signals"]["spectra_x"][x_channel])
                 ydata = np.array(data[data_file_idx]["signals"]["spectra_y"][y_channel]).reshape(-1, len(xdata))
+
+                if background is not None:
+                    ydata -= background[y_channel]
+
                 spectra_fig.add_trace(
                     go.Scatter(x=xdata,
                                y=ydata[selected_point["pointIndex"]],
@@ -98,13 +106,16 @@ def make_spectra_fig(data, x_channel, y_channels, selectiondata, spectra_fig):
         # Add new mean trace
         all_y = np.array([trace.y for trace in spectra_fig.data if trace.customdata[0] == y_channel])
 
-        if all_y.shape[0] > 1:
-            spectra_fig.add_trace(go.Scatter(x=spectra_fig.data[0].x, y=all_y.mean(axis=0),
-                                             name=f"Mean ({y_channel})",
-                                             customdata=[None], # Otherwise no entry to compare to when building y
-                                             line=dict(width=5, dash="dash")))
+        spectra_fig.add_trace(go.Scatter(x=spectra_fig.data[0].x, y=all_y.mean(axis=0),
+                                         name=f"Mean ({y_channel})",
+                                         customdata=[None],  # Otherwise no entry to compare to when building y
+                                         line=dict(width=5, dash="dash"),
+                                         visible=all_y.shape[0] > 1))
 
     spectra_fig.update_layout(xaxis_title=x_channel, yaxis_title=y_channel)
 
     return spectra_fig
 
+
+def make_derivative_fig(spectra_fig):
+    return spectra_fig
