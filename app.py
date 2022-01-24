@@ -124,7 +124,8 @@ fig_layout = html.Div([
         multiple=True,
         children=html.Div([
             'Drag and Drop or ',
-            html.A('Select Files')]),
+            html.A('Select Files.'),
+        ' (Formats Supported:  *.sxm,  *.dat,  *.3ds,  *.XX_mtrx)']),
         style={
             'width': '1800px',
             'height': '60px',
