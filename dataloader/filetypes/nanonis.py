@@ -46,7 +46,7 @@ def convert_3ds(fname):
                "spectra_y_channels": utils.ensure_list(data.header["channels"]),
                "img_channels": ["topo"] + data.header["fixed_parameters"] + data.header["experimental_parameters"],
                "spectra_x": {data.header["sweep_signal"]: data.signals["sweep_signal"].tolist()},
-               "spectra_y": {channel: data.signals[channel].ravel().tolist() for channel in data.header["channels"]},
+               "spectra_y": {channel: data.signals[channel].tolist() for channel in data.header["channels"]},
                "img": {"topo": data.signals["topo"].ravel().tolist(),
                        **{channel: data.signals["params"][..., i].ravel().tolist() for i, channel in enumerate(
                            data.header["fixed_parameters"] + data.header["experimental_parameters"])}

@@ -37,6 +37,24 @@ def mpl_to_plotly(cmap, pl_entries=30, rdigits=6):
     return pl_colorscale
 
 
+def combine_selection_events(events):
+    out_dict = {}
+    [out_dict.update(event) for event in events if event is not None]
+
+    if len(out_dict):
+        return out_dict["points"]
+    else:
+        return None
+
+# def build_hover(info: dict):
+#     hovertemplate = ""
+#     for i, col in enumerate(params_pandas.columns):
+#         hovertemplate += f"<b>{col}: </b>" + \
+#                          "%{customdata[" + f"{i}" + "]:,.3g}<br>"
+#     hovertemplate += '<extra></extra>'
+#     return hovertemplate
+
+
 def build_spectra_hover(params_pandas: pd.DataFrame):
     hovertemplate = ""
     for i, col in enumerate(params_pandas.columns):

@@ -6,7 +6,6 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from dash_bootstrap_templates import load_figure_template
-from plotly import graph_objects as go
 
 import data
 import plotting
@@ -19,7 +18,7 @@ app.title = "Spectra Explorer"
 load_figure_template(["darkly"])
 
 image_fig = plotting.make_empty_image_plot()
-spectra_fig = plotting.make_spectra_fig()
+spectra_fig = plotting.make_empty_spectra_fig()
 
 
 @app.callback(Output('uploaded-data', 'data'),
@@ -52,7 +51,8 @@ def load_files(resource_data_store, list_of_contents, list_of_names):
               Input('image-channel-dropdown', 'value'),
               prevent_initial_call=True)
 def update_image_spec_pos_figure(uploaded_data, image_channel):
-    return plotting.make_image_spec_position_plot(uploaded_data, image_channel)
+    img_fig = plotting.make_image_spec_position_plot(uploaded_data, image_channel)
+    return img_fig
 
 
 @app.callback(Output('fig-spectra', 'figure'),
@@ -66,11 +66,17 @@ def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channel, sele
     # If clear spectra button is pressed, clear the spectra datastore
     # Need to make it so we can keep adding spectra without clearing
     # Eventually add tabs into this for integrate/derivative/double derivative
+    spec_figure = plotting.make_empty_spectra_fig()
 
-    print(select_spectra)
-    print(multi_select_spectra)
+    # Prevent execution if not enough options selected
+    all_selections = utils.combine_selection_events((select_spectra, multi_select_spectra))
+    if not all([all_selections, uploaded_data, spectra_x_channel, spectra_y_channel]):
+        raise dash.exceptions.PreventUpdate
 
-    return go.Figure()
+    spec_figure = plotting.make_spectra_fig(uploaded_data, spectra_x_channel, spectra_y_channel, all_selections,
+                                            spec_figure)
+
+    return spec_figure
 
 
 #
@@ -168,16 +174,26 @@ fig_layout = html.Div([
 datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='session'
                              dcc.Store(id='btn-clear-old-data')])
 
-attribution_layout = html.Div(html.A('Assess favicon created by Anggara - Flaticon',
-                                     id="favicon-attribution",
-                                     href="https://www.flaticon.com/free-icons/assess",
-                                     style={"maginTop": 50,
-                                            "color": "#AAAAAA"}
-                                     ))
+attribution_layout = html.Div(children=[
+    html.A('Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022)',
+           id="author-attribution",
+           style={"maginTop": 50,
+                  "color": "#AAAAAA"}
+           ),
+    html.A('Assess favicon created by Anggara - Flaticon',
+           id="favicon-attribution",
+           href="https://www.flaticon.com/free-icons/assess",
+           style={"maginTop": 50,
+                  "text-align": "right",
+                  "align": "right",
+                  "color": "#AAAAAA"}
+           )
+], style={"width": "1800px"})
 
 app.layout = dbc.Container(
     [fig_layout,
      datastore_layout,
+     html.Hr(),
      attribution_layout],
     fluid=True,
     className="dbc"

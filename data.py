@@ -20,11 +20,13 @@ def make_tmpfile(contents: str, orig_name: str):
     f.close()
 
 
-def del_tmpfile(orig_name: str):
-    os.remove(orig_name)
+def del_tmpfile_dir():
+    for file in os.listdir("tmp"):
+        os.remove(f"tmp/{file}")
 
 
 def make_empty_data_store():
+    del_tmpfile_dir()
     return []
 
 
@@ -40,8 +42,7 @@ def add_file_to_datastore(data, filename: str, old_datastore):
         new_entry = nanonis.convert_sxm(tmp_path)
     else:
         raise ValueError("File Format Not Supported!")
-
-    del_tmpfile(tmp_path)
+    #N.B for matrix, will need a _mtrx index file in directory. Skip it
 
     return old_datastore + [new_entry]
 
