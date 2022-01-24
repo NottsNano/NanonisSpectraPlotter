@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from dash_bootstrap_templates import load_figure_template
+from plotly import graph_objects as go
 
 import data
 import plotting
@@ -30,8 +31,7 @@ spectra_fig = plotting.make_empty_spectra_fig()
               State('upload-data-box', 'filename'),
               prevent_initial_call=True)
 def load_files(resource_data_store, list_of_contents, list_of_names):
-    # If full reset button is clicked, delete data store
-    if resource_data_store is None:  # or button is pressed
+    if resource_data_store is None:
         resource_data_store = data.make_empty_data_store()
 
     # Load in the data from each file into a unified, jsonable dictionary to be stored
@@ -56,52 +56,44 @@ def update_image_spec_pos_figure(uploaded_data, image_channel):
 
 
 @app.callback(Output('fig-spectra', 'figure'),
+              Output('data-clear-spec', 'data'),
               State('uploaded-data', 'data'),
               Input('spectra-x-channel-dropdown', 'value'),
               Input('spectra-y-channel-dropdown', 'value'),
               Input('fig-image', 'clickData'),
               Input('fig-image', 'selectedData'),
+              Input('fig-spectra', 'figure'),
+              Input('btn-clear-spec', 'n_clicks'),
+              State('data-clear-spec', 'data'),
               prevent_initial_call=True)
-def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channel, select_spectra, multi_select_spectra):
-    # If clear spectra button is pressed, clear the spectra datastore
-    # Need to make it so we can keep adding spectra without clearing
-    # Eventually add tabs into this for integrate/derivative/double derivative
-    spec_figure = plotting.make_empty_spectra_fig()
+def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channels, select_spectra, multi_select_spectra,
+                       old_fig, reset_presses, reset_presses_old):
+    # Reset if clear spectra button pressed
+    if utils.is_button_pressed(reset_presses, reset_presses_old):
+        return plotting.make_empty_spectra_fig(), reset_presses
+
+    if old_fig is None:
+        spec_figure = plotting.make_empty_spectra_fig()
+    else:
+        spec_figure = go.Figure(old_fig)
 
     # Prevent execution if not enough options selected
     all_selections = utils.combine_selection_events((select_spectra, multi_select_spectra))
-    if not all([all_selections, uploaded_data, spectra_x_channel, spectra_y_channel]):
+    if not all([all_selections, uploaded_data, spectra_x_channel, spectra_y_channels]):
         raise dash.exceptions.PreventUpdate
 
-    spec_figure = plotting.make_spectra_fig(uploaded_data, spectra_x_channel, spectra_y_channel, all_selections,
-                                            spec_figure)
+    # TODO Add tabs for integratal/derivative/double derivative windows
+    # Draw the main figure
+    spec_figure = plotting.make_spectra_fig(uploaded_data, spectra_x_channel, spectra_y_channels,
+                                            all_selections, spec_figure)
 
-    return spec_figure
+    return spec_figure, reset_presses
 
 
-#
-# @app.callback(Output('ref-spectra', 'figure'),
-#               Output('btn-clear-old-data', 'data'),
-#               Input('fig-image', 'clickData'),
-#               Input('fig-image', 'selectedData'),
-#               State('spectra-data', 'data'),
-#               Input('y-channel-dropdown', 'value'),
-#               Input('btn-clear-spec', 'n_clicks'),
-#               State('btn-clear-old-data', 'data'),
-#               prevent_initial_call=True)
-# def spectraplotter(clickdata, selectdata, dot3dsdata_dict, selected_y_channels, clearbutton_presses,
-#                    old_clearbutton_presses):
-#     if old_clearbutton_presses is None or clearbutton_presses is None:
-#         old_clearbutton_presses = clearbutton_presses = 0
-#     if clearbutton_presses > old_clearbutton_presses:
-#         return plotting.make_spectra_fig(), clearbutton_presses
-#
-#     dot3dsdata_dict = json.loads(dot3dsdata_dict)
-#     useful_data = combine_click_selects([clickdata, selectdata])
-#
-#     spectra_fig = plotting.plot_spectra(useful_data, selected_y_channels, dot3dsdata_dict)
-#
-#     return spectra_fig, clearbutton_presses
+# TODO: For background removal, have the button take the mean trace from the spectra figure, store it, and
+# modify the spectra plotting function to take this in as an additional argument, which we can then subtract. Easy!
+def set_spectra_as_background():
+    pass
 
 
 fig_layout = html.Div([
@@ -153,7 +145,7 @@ fig_layout = html.Div([
                      multi=True,
                      style={'width': '300px',
                             'display': 'inline-block'}),
-        dbc.Button("Set as Background", id="btn-background-spec",
+        dbc.Button("Set as Background", id="btn-set-background",
                    size="sm",
                    color="secondary",
                    style={'width': "150px",
@@ -170,6 +162,8 @@ fig_layout = html.Div([
                           'display': 'inline-block'}),
 
         dbc.Button("Clear All", id="btn-clear-all",
+                   href="/",
+                   external_link=True,
                    size="sm",
                    style={'width': "150px",
                           'height': "36px",
@@ -195,7 +189,9 @@ fig_layout = html.Div([
 ])
 
 datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='session'
-                             dcc.Store(id='btn-clear-old-data')])
+                             dcc.Store(id='data-set-background'),
+                             dcc.Store(id='data-clear-spec'),
+                             dcc.Store(id='data-clear-all')])
 
 attribution_layout = html.Div(children=[
     html.A('Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022). ',
@@ -207,7 +203,7 @@ attribution_layout = html.Div(children=[
            id="favicon-attribution",
            href="https://www.flaticon.com/free-icons/assess",
            style={"maginTop": 50,
-                  "margin-left": "10px",
+                  "margin-left": "5px",
                   "color": "#AAAAAA"}
            )],
     style={"width": "1800px"})

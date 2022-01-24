@@ -78,41 +78,33 @@ def make_spectra_fig(data, x_channel, y_channels, selectiondata, spectra_fig):
             # Check that we can actually plot our data!
             if x_channel in data[data_file_idx]["signals"]["spectra_x"].keys() and \
                     y_channel in data[data_file_idx]["signals"]["spectra_y"].keys():
-
                 xdata = np.array(data[data_file_idx]["signals"]["spectra_x"][x_channel])
                 ydata = np.array(data[data_file_idx]["signals"]["spectra_y"][y_channel]).reshape(-1, len(xdata))
                 spectra_fig.add_trace(
                     go.Scatter(x=xdata,
                                y=ydata[selected_point["pointIndex"]],
-                               name=data[data_file_idx]["experiment_metadata"]["experiment_name"]))
+                               name=data[data_file_idx]["experiment_metadata"]["experiment_name"],
+                               customdata=[y_channel]))
+
+    # Plot mean of all visible traces in this y channel
+    for y_channel in y_channels:
+        # Remove old mean trace
+        tmp_data = list(spectra_fig.data)
+        for i, entry in enumerate(tmp_data):
+            if entry.name == f"Mean ({y_channel})":
+                tmp_data.pop(i)
+        spectra_fig.data = tuple(tmp_data)
+
+        # Add new mean trace
+        all_y = np.array([trace.y for trace in spectra_fig.data if trace.customdata[0] == y_channel])
+
+        if all_y.shape[0] > 1:
+            spectra_fig.add_trace(go.Scatter(x=spectra_fig.data[0].x, y=all_y.mean(axis=0),
+                                             name=f"Mean ({y_channel})",
+                                             customdata=[None], # Otherwise no entry to compare to when building y
+                                             line=dict(width=5, dash="dash")))
 
     spectra_fig.update_layout(xaxis_title=x_channel, yaxis_title=y_channel)
 
     return spectra_fig
 
-#
-# def plot_spectra(useful_data, selected_y_channels, dot3dsdata_dict):
-#     spectra_fig = make_spectra_fig()
-#     spectra_fig.data = []
-#     spectra_fig.update_layout(yaxis_title=selected_y_channels[0])
-#
-#     all_y = np.zeros((len(useful_data) * len(selected_y_channels), len(dot3dsdata_dict["sweep_signal"])))
-#     all_y[:] = np.nan
-#     i = 0
-#     for pointindex, metadata in useful_data.items():
-#         for y_channel in selected_y_channels:
-#             all_y[i, :] = dot3dsdata_dict[y_channel][pointindex]
-#             spectra_fig.add_trace(go.Scatter(x=dot3dsdata_dict["sweep_signal"],
-#                                              y=dot3dsdata_dict[y_channel][pointindex],
-#                                              name=y_channel +
-#                                                   f": ({useful_data[pointindex]['x']:.2g}, "
-#                                                   f"{useful_data[pointindex]['y']:.2g})"))
-#             i += 1
-#
-#     if i > 1:
-#         spectra_fig.add_trace(go.Scatter(x=dot3dsdata_dict["sweep_signal"],
-#                                          y=np.nanmean(all_y, axis=0),
-#                                          line=dict(width=4, dash="dash"),
-#                                          name="Mean"))
-#
-#     return spectra_fig

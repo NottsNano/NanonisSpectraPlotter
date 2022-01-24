@@ -1,7 +1,4 @@
-from itertools import chain
-
 import numpy as np
-import pandas as pd
 
 
 def get_ext(fpath):
@@ -46,6 +43,7 @@ def combine_selection_events(events):
     else:
         return None
 
+
 # def build_hover(info: dict):
 #     hovertemplate = ""
 #     for i, col in enumerate(params_pandas.columns):
@@ -54,24 +52,9 @@ def combine_selection_events(events):
 #     hovertemplate += '<extra></extra>'
 #     return hovertemplate
 
-
-def build_spectra_hover(params_pandas: pd.DataFrame):
-    hovertemplate = ""
-    for i, col in enumerate(params_pandas.columns):
-        hovertemplate += f"<b>{col}: </b>" + \
-                         "%{customdata[" + f"{i}" + "]:,.3g}<br>"
-    hovertemplate += '<extra></extra>'
-    return hovertemplate
-
-
-def combine_click_selects(events: list):
-    all_outs = {}
-    for interactiontype in events:
-        if interactiontype is None:
-            continue
-        for event in interactiontype["points"]:
-            all_outs[event["pointIndex"]] = {"customdata": event["customdata"],
-                                             "x": event["x"],
-                                             "y": event["y"]}
-
-    return all_outs
+def is_button_pressed(new_n_clicks, old_n_clicks):
+    if old_n_clicks is None:
+        old_n_clicks = 0
+    if new_n_clicks is None:
+        new_n_clicks = 0
+    return new_n_clicks > old_n_clicks
