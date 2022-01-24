@@ -20,6 +20,7 @@ load_figure_template(["darkly"])
 
 image_fig = plotting.make_empty_image_plot()
 spectra_fig = plotting.make_empty_spectra_fig()
+data.del_tmpfile_dir()
 
 
 @app.callback(Output('uploaded-data', 'data'),
@@ -99,7 +100,7 @@ def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channels, sel
               State('data-background-spec-btn', 'data'),
               prevent_initial_call=True)
 def set_spectra_as_background(spec_figure, y_channels, reset_presses, reset_presses_old):
-    if spec_figure is None:
+    if len(spec_figure["data"]) == 0:
         raise dash.exceptions.PreventUpdate
 
     if utils.is_button_pressed(reset_presses, reset_presses_old):
