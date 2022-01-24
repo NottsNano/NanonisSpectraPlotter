@@ -86,6 +86,8 @@ def make_spectra_fig(data, x_channel, y_channels, selectiondata, spectra_fig):
                                y=ydata[selected_point["pointIndex"]],
                                name=data[data_file_idx]["experiment_metadata"]["experiment_name"]))
 
+    spectra_fig.update_layout(xaxis_title=x_channel, yaxis_title=y_channel)
+
     return spectra_fig
 
 #

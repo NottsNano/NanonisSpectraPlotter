@@ -123,18 +123,24 @@ fig_layout = html.Div([
         })),
     html.Hr(),
     html.Div([
-        dcc.Markdown("**Image Channel: **",
+        dcc.Markdown("**Image Channel:**",
                      style={'width': '600px',
                             "text-align": "center",
                             'display': 'inline-block'}),
-        dcc.Markdown("**Spectra Channels: **",
-                     style={'width': '1200px',
+        dcc.Markdown("**Spectra Channels:**",
+                     style={'width': '700px',
+                            "text-align": "center",
+                            'display': 'inline-block'}),
+        dcc.Markdown("**Global Controls:**",
+                     style={'width': '200px',
+                            "margin-left": "250px",
                             "text-align": "center",
                             'display': 'inline-block'}),
 
         dcc.Dropdown(id="image-channel-dropdown",
                      placeholder="Image Channel",
                      style={'width': '600px',
+                            "margin-right": "25px",
                             'display': 'inline-block'}),
 
         dcc.Dropdown(id="spectra-x-channel-dropdown",
@@ -147,12 +153,29 @@ fig_layout = html.Div([
                      multi=True,
                      style={'width': '300px',
                             'display': 'inline-block'}),
-        dbc.Button("Clear Spectra", id="btn-clear-spec",
+        dbc.Button("Set as Background", id="btn-background-spec",
                    size="sm",
-                   style={'width': '7%',
+                   color="secondary",
+                   style={'width': "150px",
                           'height': "36px",
                           "position": "relative", "bottom": "14px",  # This is misaligned for some reason.
-                          'display': 'inline-block'})]
+                          'display': 'inline-block'}),
+
+        dbc.Button("Clear Spectra", id="btn-clear-spec",
+                   size="sm",
+                   style={'width': "150px",
+                          'height': "36px",
+                          "margin-left": "125px",
+                          "position": "relative", "bottom": "14px",  # This is misaligned for some reason.
+                          'display': 'inline-block'}),
+
+        dbc.Button("Clear All", id="btn-clear-all",
+                   size="sm",
+                   style={'width': "150px",
+                          'height': "36px",
+                          "position": "relative", "bottom": "14px",  # This is misaligned for some reason.
+                          'display': 'inline-block'})
+    ]
     ),
     html.Hr(),
     html.Div([
@@ -175,7 +198,7 @@ datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='ses
                              dcc.Store(id='btn-clear-old-data')])
 
 attribution_layout = html.Div(children=[
-    html.A('Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022)',
+    html.A('Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022). ',
            id="author-attribution",
            style={"maginTop": 50,
                   "color": "#AAAAAA"}
@@ -184,11 +207,10 @@ attribution_layout = html.Div(children=[
            id="favicon-attribution",
            href="https://www.flaticon.com/free-icons/assess",
            style={"maginTop": 50,
-                  "text-align": "right",
-                  "align": "right",
+                  "margin-left": "10px",
                   "color": "#AAAAAA"}
-           )
-], style={"width": "1800px"})
+           )],
+    style={"width": "1800px"})
 
 app.layout = dbc.Container(
     [fig_layout,
