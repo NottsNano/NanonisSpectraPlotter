@@ -1,3 +1,4 @@
+import numpy as np
 from flatten_dict import flatten
 from nanonispy.read import Grid, Spec, Scan
 
@@ -21,8 +22,24 @@ def convert_3ds(fname):
 
                "pos_xy": (data.signals["params"][...,
                           (len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index("X (m)"))
-                          :(len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index("Y (m)")+1)].tolist()),
-               "size_xy": list(data.header["size_xy"]),
+                          :(len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index(
+                              "Y (m)") + 1)].tolist()),
+               "size_xy": [
+                   np.max(data.signals["params"][..., (
+                           len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index(
+                       "X (m)"))]) -
+                   np.min(data.signals["params"][..., (
+                           len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index(
+                       "X (m)"))])
+                   ,
+                   np.max(data.signals["params"][..., (
+                           len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index(
+                       "Y (m)"))]) -
+                   np.min(data.signals["params"][..., (
+                           len(data.header["fixed_parameters"]) + data.header["experimental_parameters"].index(
+                       "Y (m)"))])
+
+               ],   # Normal width/height isn't right :(
                "image_points_res": list(data.header["dim_px"]),
                "spectra_res": data.header["num_sweep_signal"],
                "spectra_x_channels": utils.ensure_list(data.header["sweep_signal"]),

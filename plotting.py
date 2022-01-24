@@ -24,6 +24,7 @@ def make_image_spec_position_plot(data, img_channel):
     # Extract needed data
     img_data = utils.extract_all_values(data, "signals", "img")
     pos = utils.extract_all_values(data, "signal_metadata", "pos_xy")
+    sizes = utils.extract_all_values(data, "signal_metadata", "size_xy")
     names = utils.extract_all_values(data, "experiment_metadata", "experiment_name")
     res = utils.extract_all_values(data, "signal_metadata", "image_points_res")
 
@@ -33,12 +34,13 @@ def make_image_spec_position_plot(data, img_channel):
         # Add images
         if data[i]["signal_metadata"]["img_channels"] is not None:
             if img_channel in data[i]["signal_metadata"]["img_channels"]:
+
                 imshow = px.imshow(np.array(img_data[i][img_channel]).reshape(res[i][::-1]),
                                    x=np.linspace(np.array(pos[i])[..., 0].min(),
-                                                 np.array(pos[i])[..., 0].max(),
+                                                 np.array(pos[i])[..., 0].min() + sizes[i][0],
                                                  res[i][0]),
                                    y=np.linspace(np.array(pos[i])[..., 1].min(),
-                                                 np.array(pos[i])[..., 1].max(),
+                                                 np.array(pos[i])[..., 1].min() + sizes[i][1],
                                                  res[i][1]),
                                    color_continuous_scale=mpl_to_plotly(nanomap),
                                    origin="lower", aspect="equal")
@@ -46,11 +48,12 @@ def make_image_spec_position_plot(data, img_channel):
                 image_fig.update_layout(imshow.layout, hovermode="closest")
 
         # Add spectra
-        image_fig.add_trace(go.Scatter(x=np.array(pos[i])[..., 0].ravel(), y=np.array(pos[i])[..., 1].ravel(),
-                                       name=names[i],
-                                       mode="markers",
-                                       hoverinfo='text',
-                                       customdata=np.repeat(i, np.array(pos[i]).size // 2)))
+        if data[i]["experiment_metadata"]["data_type"] == "spectra":
+            image_fig.add_trace(go.Scatter(x=np.array(pos[i])[..., 0].ravel(), y=np.array(pos[i])[..., 1].ravel(),
+                                           name=names[i],
+                                           mode="markers",
+                                           hoverinfo='text',
+                                           customdata=np.repeat(i, np.array(pos[i]).size // 2)))
 
     return image_fig
 

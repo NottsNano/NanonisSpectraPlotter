@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 from dash.dependencies import Input, Output, State
 from dash_bootstrap_templates import load_figure_template
+from plotly import graph_objects as go
 
 import data
 import plotting
@@ -13,7 +14,7 @@ import utils
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates@V1.0.4/dbc.min.css"
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc_css])
-# app._favicon = ("path_to_folder/(your_icon).co")
+app._favicon = "favicon.ico"
 app.title = "Spectra Explorer"
 load_figure_template(["darkly"])
 
@@ -31,7 +32,7 @@ spectra_fig = plotting.make_spectra_fig()
               prevent_initial_call=True)
 def load_files(resource_data_store, list_of_contents, list_of_names):
     # If full reset button is clicked, delete data store
-    if resource_data_store is None: # or button is pressed
+    if resource_data_store is None:  # or button is pressed
         resource_data_store = data.make_empty_data_store()
 
     # Load in the data from each file into a unified, jsonable dictionary to be stored
@@ -40,64 +41,43 @@ def load_files(resource_data_store, list_of_contents, list_of_names):
 
     # Populate the dropdown menu options
     image_channels = utils.makedropdownopts(resource_data_store, "signal_metadata", "img_channels")
-    spectra_x_channels = utils.makedropdownopts(resource_data_store, "spectra_x_channels", "img_channels")
-    spectra_y_channels = utils.makedropdownopts(resource_data_store, "spectra_x_channels", "img_channels")
+    spectra_x_channels = utils.makedropdownopts(resource_data_store, "signal_metadata", "spectra_x_channels")
+    spectra_y_channels = utils.makedropdownopts(resource_data_store, "signal_metadata", "spectra_y_channels")
 
     return resource_data_store, image_channels, spectra_x_channels, spectra_y_channels
 
 
-@app.callback(Output('ref-image', 'figure'),
+@app.callback(Output('fig-image', 'figure'),
               Input('uploaded-data', 'data'),
               Input('image-channel-dropdown', 'value'),
               prevent_initial_call=True)
-def update_image_figure(uploaded_data, image_channel):
+def update_image_spec_pos_figure(uploaded_data, image_channel):
     return plotting.make_image_spec_position_plot(uploaded_data, image_channel)
 
 
-#
-#
-# @app.callback(Output('ref-image', 'figure'),
-#               Output('spectra-data', 'data'),
-#               Output('image-dropdown', 'options'),
-#               Output('y-channel-dropdown', 'options'),
-#               Input("uploaded-data", 'data'))
-# def set_image_fig(spectra_path, sxm_path, image_channel):
-#     if spectra_path is (None or ""):
-#         return image_fig, json.dumps(""), [], []
-#
-#     dot3ds_data = load_grid(spectra_path)
-#     dot3ds_data_dict = dot3ds_2dict(dot3ds_data)
-#
-#     if sxm_path is not (None or ""):
-#         sxm_data = load_img(sxm_path)
-#         sxm_data_dict = sxm2dict(sxm_data)
-#     else:
-#         sxm_data = None
-#
-#     dropdown_opts = build_dropdown_options(dot3ds_data, sxm_data)
-#     channel_dropdown_opts = [{"label": val, "value": val} for val in dot3ds_data_dict["channels"]]
-#
-#     if image_channel is None:
-#         return image_fig, json.dumps(dot3ds_data_dict), dropdown_opts, channel_dropdown_opts
-#     elif image_channel in dot3ds_data_dict.keys():
-#         res = dot3ds_data.header["dim_px"][::-1]
-#         resizing = res + [-1]
-#         background_img = np.array(dot3ds_data_dict[image_channel]).reshape(resizing).mean(
-#             axis=-1)  # for now slice it, replace with slider in future
-#     else:
-#         background_img = sxm_data_dict[image_channel]
-#
-#     # updated_top_fig = callbacks.set_title(updated_top_fig, dot3ds_data.basename)
-#     updated_top_fig = plotting.plot_positions_vs_image(dot3ds_data_dict, background_img)
-#
-#     return updated_top_fig, json.dumps(dot3ds_data_dict), dropdown_opts, channel_dropdown_opts
+@app.callback(Output('fig-spectra', 'figure'),
+              State('uploaded-data', 'data'),
+              Input('spectra-x-channel-dropdown', 'value'),
+              Input('spectra-y-channel-dropdown', 'value'),
+              Input('fig-image', 'clickData'),
+              Input('fig-image', 'selectedData'),
+              prevent_initial_call=True)
+def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channel, select_spectra, multi_select_spectra):
+    # If clear spectra button is pressed, clear the spectra datastore
+    # Need to make it so we can keep adding spectra without clearing
+    # Eventually add tabs into this for integrate/derivative/double derivative
+
+    print(select_spectra)
+    print(multi_select_spectra)
+
+    return go.Figure()
 
 
 #
 # @app.callback(Output('ref-spectra', 'figure'),
 #               Output('btn-clear-old-data', 'data'),
-#               Input('ref-image', 'clickData'),
-#               Input('ref-image', 'selectedData'),
+#               Input('fig-image', 'clickData'),
+#               Input('fig-image', 'selectedData'),
 #               State('spectra-data', 'data'),
 #               Input('y-channel-dropdown', 'value'),
 #               Input('btn-clear-spec', 'n_clicks'),
@@ -118,7 +98,7 @@ def update_image_figure(uploaded_data, image_channel):
 #     return spectra_fig, clearbutton_presses
 
 
-root_layout = html.Div([
+fig_layout = html.Div([
     html.Hr(),
     html.Div(dcc.Upload(
         id='upload-data-box',
@@ -171,13 +151,13 @@ root_layout = html.Div([
     html.Hr(),
     html.Div([
         dcc.Graph(
-            id='ref-image',
+            id='fig-image',
             figure=image_fig,
             style={'width': "600px",
                    'height': "600px",
                    'display': 'inline-block'}),
         dcc.Graph(
-            id='ref-spectra',
+            id='fig-spectra',
             figure=spectra_fig,
             style={'width': "1200px",
                    'height': "600px",
@@ -185,10 +165,20 @@ root_layout = html.Div([
     ])
 ])
 
+datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='session'
+                             dcc.Store(id='btn-clear-old-data')])
+
+attribution_layout = html.Div(html.A('Assess favicon created by Anggara - Flaticon',
+                                     id="favicon-attribution",
+                                     href="https://www.flaticon.com/free-icons/assess",
+                                     style={"maginTop": 50,
+                                            "color": "#AAAAAA"}
+                                     ))
+
 app.layout = dbc.Container(
-    [root_layout,
-     dcc.Store(id='uploaded-data'),  # storage_type='session'
-     dcc.Store(id='btn-clear-old-data')],
+    [fig_layout,
+     datastore_layout,
+     attribution_layout],
     fluid=True,
     className="dbc"
 )
