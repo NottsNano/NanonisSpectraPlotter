@@ -1,6 +1,3 @@
-# Run this app with `python app.py` and
-# visit http://127.0.0.1:8050/ in your web browser.
-
 import dash
 import dash_bootstrap_components as dbc
 from dash import dcc, html
@@ -54,6 +51,14 @@ def load_files(resource_data_store, list_of_contents, list_of_names):
 def update_image_spec_pos_figure(uploaded_data, image_channel):
     img_fig = plotting.make_image_spec_position_plot(uploaded_data, image_channel)
     return img_fig
+
+
+@app.callback(Output("download-spec", "data"),
+              Input("btn-download-spec", "n_clicks"),
+              State('fig-spectra', 'figure'),
+              prevent_initial_call=True)
+def download_spectra_as_json(_, fig_spectra):
+    return dict(content=fig_spectra, filename="spectra_data.json")
 
 
 @app.callback(Output('fig-spectra', 'figure'),
@@ -125,7 +130,7 @@ fig_layout = html.Div([
         children=html.Div([
             'Drag and Drop or ',
             html.A('Select Files.'),
-        ' (Formats Supported:  *.sxm,  *.dat,  *.3ds,  *.XX_mtrx)']),
+            ' (Formats Supported:  *.sxm,  *.dat,  *.3ds,  *.XX_mtrx)']),
         style={
             'width': '1800px',
             'height': '60px',
@@ -145,7 +150,7 @@ fig_layout = html.Div([
                      style={'width': '700px',
                             "text-align": "center",
                             'display': 'inline-block'}),
-        dcc.Markdown("**Global Controls:**",
+        dcc.Markdown("**Data Controls:**",
                      style={'width': '200px',
                             "margin-left": "250px",
                             "text-align": "center",
@@ -182,7 +187,6 @@ fig_layout = html.Div([
                           "margin-left": "125px",
                           "position": "relative", "bottom": "14px",  # This is misaligned for some reason.
                           'display': 'inline-block'}),
-
         dbc.Button("Clear All", id="btn-clear-all",
                    href="/",
                    external_link=True,
@@ -190,7 +194,13 @@ fig_layout = html.Div([
                    style={'width': "150px",
                           'height': "36px",
                           "position": "relative", "bottom": "14px",  # This is misaligned for some reason.
-                          'display': 'inline-block'})
+                          'display': 'inline-block'}),
+        # dbc.Button("Download Spectra", id="btn-download-spec",
+        #            size="sm",
+        #            style={'width': "150px",
+        #                   'height': "36px",
+        #                   "position": "relative", "bottom": "14px",  # This is misaligned for some reason.
+        #                   'display': 'inline-block'}),
     ]
     ),
     html.Hr(),
@@ -206,7 +216,12 @@ fig_layout = html.Div([
             figure=spectra_fig,
             style={'width': "1200px",
                    'height': "600px",
-                   'display': 'inline-block'})
+                   'display': 'inline-block'},
+            config={"modeBarButtonsToAdd": ["sendDataToCloud"],
+                    'showEditInChartStudio':True,
+                    'editable': False,
+                    "plotlyServerURL":"https://chart-studio.plotly.com"},
+        )
     ])
 ])
 
@@ -214,7 +229,8 @@ datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='ses
                              dcc.Store(id='background-data'),
                              dcc.Store(id='data-background-spec-btn'),
                              dcc.Store(id='data-clear-spec-btn'),
-                             dcc.Store(id='data-clear-all-btn')])
+                             dcc.Store(id='data-clear-all-btn'),
+                             dcc.Download(id="download-spec")])
 
 attribution_layout = html.Div(children=[
     html.A('💝 Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022). ',
