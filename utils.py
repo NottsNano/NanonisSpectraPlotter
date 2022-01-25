@@ -44,17 +44,15 @@ def combine_selection_events(events):
         return None
 
 
-# def build_hover(info: dict):
-#     hovertemplate = ""
-#     for i, col in enumerate(params_pandas.columns):
-#         hovertemplate += f"<b>{col}: </b>" + \
-#                          "%{customdata[" + f"{i}" + "]:,.3g}<br>"
-#     hovertemplate += '<extra></extra>'
-#     return hovertemplate
-
 def is_button_pressed(new_n_clicks, old_n_clicks):
     if old_n_clicks is None:
         old_n_clicks = 0
     if new_n_clicks is None:
         new_n_clicks = 0
     return new_n_clicks > old_n_clicks
+
+
+spectra_hovertemplate = '<br>(%{x:,.3g}, %{y:,.3g})'
+
+
+

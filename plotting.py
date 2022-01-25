@@ -1,4 +1,4 @@
-import json
+import itertools
 
 import numpy as np
 from nOmicron.utils.plotting import nanomap
@@ -19,8 +19,8 @@ def make_empty_image_plot():
 
 
 def make_image_spec_position_plot(data, img_channel):
-    with open('tmp/data.json', 'w') as f:
-        json.dump(data, f)
+    # with open('tmp/data.json', 'w') as f:
+    #     json.dump(data, f)
 
     # Extract needed data
     img_data = utils.extract_all_values(data, "signals", "img")
@@ -65,19 +65,24 @@ def make_empty_spectra_fig():
                               xaxis_title="Sweep",
                               width=1200,
                               height=600,
-                              margin={'t': 100, 'b': 20, 'r': 20, 'l': 20})
+                              margin={'t': 100, 'b': 20, 'r': 20, 'l': 20},
+                              hovermode="x unified",
+                              hoverlabel=dict(namelength=-1)
+                              )
 
     return spectra_fig
 
 
 def make_spectra_fig(data, x_channel, y_channels, selectiondata, background, spectra_fig):
     if background is not None:
-        spec_figure = make_empty_spectra_fig()
-        spec_figure.update_layout(title="Spectra (Background Removed)")
+        spectra_fig = make_empty_spectra_fig()
+        spectra_fig.update_layout(title="Spectra (Background Removed)")
 
+    col_pal_iterator = itertools.cycle(px.colors.qualitative.Alphabet)
     for selected_point in selectiondata:  # Loop through all selected points and all channels
         for y_channel in y_channels:
             data_file_idx = selected_point["customdata"]
+            name = data[data_file_idx]["experiment_metadata"]["experiment_name"]
 
             # Check that we can actually plot our data!
             if x_channel in data[data_file_idx]["signals"]["spectra_x"].keys() and \
@@ -85,14 +90,18 @@ def make_spectra_fig(data, x_channel, y_channels, selectiondata, background, spe
                 xdata = np.array(data[data_file_idx]["signals"]["spectra_x"][x_channel])
                 ydata = np.array(data[data_file_idx]["signals"]["spectra_y"][y_channel]).reshape(-1, len(xdata))
 
+                # Remove the background
                 if background is not None:
                     ydata -= background[y_channel]
 
+                # Add the plot
                 spectra_fig.add_trace(
                     go.Scatter(x=xdata,
                                y=ydata[selected_point["pointIndex"]],
-                               name=data[data_file_idx]["experiment_metadata"]["experiment_name"],
-                               customdata=[y_channel]))
+                               line=dict(color=next(col_pal_iterator)),
+                               name=name,
+                               customdata=[y_channel],
+                               hovertemplate=utils.spectra_hovertemplate))
 
     # Plot mean of all visible traces in this y channel
     for y_channel in y_channels:
@@ -110,10 +119,10 @@ def make_spectra_fig(data, x_channel, y_channels, selectiondata, background, spe
                                          name=f"Mean ({y_channel})",
                                          customdata=[None],  # Otherwise no entry to compare to when building y
                                          line=dict(width=5, dash="dash"),
-                                         visible=all_y.shape[0] > 1))
+                                         visible=all_y.shape[0] > 1,
+                                         hovertemplate=utils.spectra_hovertemplate))
 
     spectra_fig.update_layout(xaxis_title=x_channel, yaxis_title=y_channel)
-
     return spectra_fig
 
 
