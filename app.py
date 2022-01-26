@@ -63,6 +63,7 @@ def update_image_spec_pos_figure(uploaded_data, image_channel):
 
 @app.callback(Output('fig-spectra', 'figure'),
               Output('data-clear-spec-btn', 'data'),
+              Output('data-tabs-btn', 'data'),
               State('uploaded-data', 'data'),
               Input('spectra-x-channel-dropdown', 'value'),
               Input('spectra-y-channel-dropdown', 'value'),
@@ -72,14 +73,16 @@ def update_image_spec_pos_figure(uploaded_data, image_channel):
               Input('btn-clear-spec', 'n_clicks'),
               State('data-clear-spec-btn', 'data'),
               Input('background-data', 'data'),
+              Input('tabs-spectra', 'value'),
+              State('data-tabs-btn', 'data'),
               prevent_initial_call=True)
 def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channels, select_spectra, multi_select_spectra,
-                       old_fig, reset_presses, reset_presses_old, background_spec_data):
+                       old_fig, reset_presses, reset_presses_old, background_spec_data, tab, old_tab):
     # Reset if clear spectra button pressed
     if utils.is_button_pressed(reset_presses, reset_presses_old):
-        return plotting.make_empty_spectra_fig(), reset_presses
+        return plotting.make_empty_spectra_fig(), reset_presses, tab
 
-    if old_fig is None:
+    if (old_fig is None) or (utils.is_button_pressed(tab, old_tab)):
         spec_figure = plotting.make_empty_spectra_fig()
     else:
         spec_figure = go.Figure(old_fig)
@@ -89,12 +92,11 @@ def update_spec_figure(uploaded_data, spectra_x_channel, spectra_y_channels, sel
     if not all([all_selections, uploaded_data, spectra_x_channel, spectra_y_channels]):
         raise dash.exceptions.PreventUpdate
 
-    # TODO Add tabs for integratal/derivative/double derivative windows
     # Draw the main figure
     spec_figure = plotting.make_spectra_fig(uploaded_data, spectra_x_channel, spectra_y_channels,
-                                            all_selections, background_spec_data, spec_figure)
+                                            all_selections, background_spec_data, spec_figure, tab)
 
-    return spec_figure, reset_presses
+    return spec_figure, reset_presses, tab
 
 
 @app.callback(Output('background-data', 'data'),
@@ -217,11 +219,11 @@ fig_layout = html.Div([
                     config={"modeBarButtonsToRemove": ["toImage"]})],
                 width=4),
             dbc.Col(children=[
-                dcc.Tabs(id="tabs-example-graph", value='spectra-tabs', children=[
-                    dcc.Tab(label='Integrate', value='tab-1-example-graph'),
-                    dcc.Tab(label='Original', value='tab-2-example-graph'),
-                    dcc.Tab(label='Derivative', value='tab-3-example-graph'),
-                    dcc.Tab(label='Double Derivative', value='tab-4-example-graph')],
+                dcc.Tabs(id="tabs-spectra", value='orig', children=[
+                    dcc.Tab(label='Integrate', value='integrate'),
+                    dcc.Tab(label='Original', value='orig'),
+                    dcc.Tab(label='Derivative', value='diff'),
+                    dcc.Tab(label='Double Derivative', value='double-diff')],
                          style={'height': '50px',
                                 'width': '1265px',
                                 'text-align': 'center',
@@ -250,6 +252,7 @@ datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='ses
                              dcc.Store(id='data-background-spec-btn'),
                              dcc.Store(id='data-clear-spec-btn'),
                              dcc.Store(id='data-clear-all-btn'),
+                             dcc.Store(id='data-tabs-btn'),
                              dcc.Download(id="download-spec")])
 
 attribution_layout = html.Div(children=[

@@ -49,7 +49,7 @@ def is_button_pressed(new_n_clicks, old_n_clicks):
         old_n_clicks = 0
     if new_n_clicks is None:
         new_n_clicks = 0
-    return new_n_clicks > old_n_clicks
+    return new_n_clicks != old_n_clicks
 
 
 spectra_hovertemplate = '<br>(%{x:,.3g}, %{y:,.3g})'

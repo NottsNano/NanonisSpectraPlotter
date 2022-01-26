@@ -71,7 +71,7 @@ def make_empty_spectra_fig():
     return spectra_fig
 
 
-def make_spectra_fig(data, x_channel, y_channels, selectiondata, background, spectra_fig):
+def make_spectra_fig(data, x_channel, y_channels, selectiondata, background, spectra_fig, tab):
     if background is not None:
         spectra_fig = make_empty_spectra_fig()
         spectra_fig.update_layout(title="Spectra (Background Removed)")
@@ -91,6 +91,15 @@ def make_spectra_fig(data, x_channel, y_channels, selectiondata, background, spe
                 # Remove the background
                 if background is not None:
                     ydata -= background[y_channel]
+
+                if tab == 'orig':
+                    pass
+                elif tab == 'diff':
+                    xdata = xdata
+                    ydata = np.diff(ydata)
+                elif tab == 'double-diff':
+                    xdata = xdata[1:]
+                    ydata = np.diff(np.diff(ydata))
 
                 # Add the plot
                 spectra_fig.add_trace(
