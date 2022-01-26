@@ -53,12 +53,12 @@ def update_image_spec_pos_figure(uploaded_data, image_channel):
     return img_fig
 
 
-@app.callback(Output("download-spec", "data"),
-              Input("btn-download-spec", "n_clicks"),
-              State('fig-spectra', 'figure'),
-              prevent_initial_call=True)
-def download_spectra_as_json(_, fig_spectra):
-    return dict(content=fig_spectra, filename="spectra_data.json")
+# @app.callback(Output("download-spec", "data"),
+#               Input("btn-download-spec", "n_clicks"),
+#               State('fig-spectra', 'figure'),
+#               prevent_initial_call=True)
+# def download_spectra_as_json(_, fig_spectra):
+#     return dict(content=fig_spectra, filename="spectra_data.json")
 
 
 @app.callback(Output('fig-spectra', 'figure'),
@@ -132,7 +132,7 @@ fig_layout = html.Div([
             html.A('Select Files.'),
             ' (Formats Supported:  *.sxm,  *.dat,  *.3ds,  *.XX_mtrx)']),
         style={
-            'width': '1800px',
+            'width': '1888px',
             'height': '60px',
             'lineHeight': '60px',
             'borderWidth': '1px',
@@ -143,7 +143,7 @@ fig_layout = html.Div([
     html.Hr(),
     html.Div([
         dcc.Markdown("**Image Channel:**",
-                     style={'width': '600px',
+                     style={'width': '640px',
                             "text-align": "center",
                             'display': 'inline-block'}),
         dcc.Markdown("**Spectra Channels:**",
@@ -152,13 +152,13 @@ fig_layout = html.Div([
                             'display': 'inline-block'}),
         dcc.Markdown("**Data Controls:**",
                      style={'width': '200px',
-                            "margin-left": "250px",
+                            "margin-left": "210px",
                             "text-align": "center",
                             'display': 'inline-block'}),
 
         dcc.Dropdown(id="image-channel-dropdown",
                      placeholder="Image Channel",
-                     style={'width': '600px',
+                     style={'width': '640px',
                             "margin-right": "25px",
                             'display': 'inline-block'}),
 
@@ -184,7 +184,7 @@ fig_layout = html.Div([
                    size="sm",
                    style={'width': "150px",
                           'height': "36px",
-                          "margin-left": "125px",
+                          "margin-left": "85px",
                           "position": "relative", "bottom": "14px",  # This is misaligned for some reason.
                           'display': 'inline-block'}),
         dbc.Button("Clear All", id="btn-clear-all",
@@ -205,23 +205,43 @@ fig_layout = html.Div([
     ),
     html.Hr(),
     html.Div([
-        dcc.Graph(
-            id='fig-image',
-            figure=image_fig,
-            style={'width': "600px",
-                   'height': "600px",
-                   'display': 'inline-block'}),
-        dcc.Graph(
-            id='fig-spectra',
-            figure=spectra_fig,
-            style={'width': "1200px",
-                   'height': "600px",
-                   'display': 'inline-block'},
-            config={"modeBarButtonsToAdd": ["sendDataToCloud"],
-                    'showEditInChartStudio':True,
-                    'editable': False,
-                    "plotlyServerURL":"https://chart-studio.plotly.com"},
-        )
+        dbc.Row([
+            dbc.Col(
+                children=[dcc.Graph(
+                    id='fig-image',
+                    figure=image_fig,
+                    style={'height': '550px',
+                           'width': '640px',
+                           "margin-top": '50px',
+                           'display': 'inline-block'},
+                    config={"modeBarButtonsToRemove": ["toImage"]})],
+                width=4),
+            dbc.Col(children=[
+                dcc.Tabs(id="tabs-example-graph", value='spectra-tabs', children=[
+                    dcc.Tab(label='Integrate', value='tab-1-example-graph'),
+                    dcc.Tab(label='Original', value='tab-2-example-graph'),
+                    dcc.Tab(label='Derivative', value='tab-3-example-graph'),
+                    dcc.Tab(label='Double Derivative', value='tab-4-example-graph')],
+                         style={'height': '50px',
+                                'width': '1265px',
+                                'text-align': 'center',
+                                'vertical-align': 'middle',
+                                'line-height': '25px'}),
+                dcc.Graph(
+                    id='fig-spectra',
+                    figure=spectra_fig,
+                    style={'height': '550px',
+                           'width': '1265px',
+                           'display': 'inline-block'},
+                    config={"modeBarButtonsToRemove": ["toImage"],
+                            'showEditInChartStudio': True,
+                            'editable': False,
+                            "plotlyServerURL": "https://chart-studio.plotly.com"})
+            ],
+                width=8
+
+            )
+        ], justify="evenly", className="g-0"),
     ])
 ])
 
@@ -235,14 +255,12 @@ datastore_layout = html.Div([dcc.Store(id='uploaded-data'),  # storage_type='ses
 attribution_layout = html.Div(children=[
     html.A('💝 Made by Oliver Gordon for the University of Nottingham Nanoscience Group (2022). ',
            id="author-attribution",
-           style={"maginTop": 50,
-                  "color": "#AAAAAA"}
+           style={"color": "#AAAAAA"}
            ),
     html.A('Assess favicon created by Anggara - Flaticon',
            id="favicon-attribution",
            href="https://www.flaticon.com/free-icons/assess",
-           style={"maginTop": 50,
-                  "margin-left": "5px",
+           style={"margin-left": "5px",
                   "color": "#AAAAAA"}
            )],
     style={"width": "1800px"})

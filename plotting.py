@@ -63,8 +63,6 @@ def make_empty_spectra_fig():
     spectra_fig = go.Figure()
     spectra_fig.update_layout(title="Spectra",
                               xaxis_title="Sweep",
-                              width=1200,
-                              height=600,
                               margin={'t': 100, 'b': 20, 'r': 20, 'l': 20},
                               hovermode="x unified",
                               hoverlabel=dict(namelength=-1)
